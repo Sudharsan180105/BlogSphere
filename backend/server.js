@@ -18,15 +18,21 @@ const app = express();
 
 const PORT = Number(process.env.PORT) || 5001;
 
-const CLIENT_URL =
-  process.env.CLIENT_URL || 'http://localhost:5173';
+const CLIENT_URLS = (
+  process.env.CLIENT_URLS ||
+  process.env.CLIENT_URL ||
+  'http://localhost:5173'
+)
+  .split(',')
+  .map((url) => url.trim())
+  .filter(Boolean);
 
 // Security middleware
 app.use(helmet());
 
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: CLIENT_URLS,
     credentials: true,
   })
 );
@@ -137,7 +143,7 @@ const startServer = async () => {
       console.log('================================');
       console.log(`Server: http://localhost:${PORT}`);
       console.log(`Health: http://localhost:${PORT}/api/health`);
-      console.log(`Client: ${CLIENT_URL}`);
+      console.log(`Allowed Clients: ${CLIENT_URLS.join(', ')}`);
       console.log('Database: Connected');
       console.log('Blog API: /api/blogs');
       console.log('Status: Running');

@@ -21,7 +21,7 @@ import "./Dashboard.css";
 
 
 
-const API = "/api";
+const API = import.meta.env.VITE_API_URL || "/api";
 
 const emptyForm = {
 

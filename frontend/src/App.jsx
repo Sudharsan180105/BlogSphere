@@ -21,7 +21,7 @@ import Dashboard from "./components/Dashboard";
 
 const NexusPortal = lazy(() => import("./components/NexusPortal"));
 
-const API = "/api";
+const API = import.meta.env.VITE_API_URL || "/api";
 const TOKEN_KEY = "blogsphere_token";
 const USER_KEY = "blogsphere_user";
 
