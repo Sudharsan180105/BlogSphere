@@ -6,6 +6,8 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { rateLimit } from 'express-rate-limit';
 import mongoose from 'mongoose';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
@@ -18,6 +20,15 @@ const app = express();
 
 const PORT = Number(process.env.PORT) || 5001;
 
+// Resolve the frontend build directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const frontendDistPath = path.resolve(
+  __dirname,
+  '../frontend/dist'
+);
+
 const CLIENT_URLS = (
   process.env.CLIENT_URLS ||
   process.env.CLIENT_URL ||
@@ -27,8 +38,54 @@ const CLIENT_URLS = (
   .map((url) => url.trim())
   .filter(Boolean);
 
+
 // Security middleware
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "https://accounts.google.com/gsi/client",
+        ],
+        scriptSrcElem: [
+          "'self'",
+          "https://accounts.google.com/gsi/client",
+        ],
+        frameSrc: [
+          "'self'",
+          "https://accounts.google.com/gsi/",
+        ],
+        connectSrc: [
+          "'self'",
+          "https://accounts.google.com/gsi/",
+        ],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://fonts.googleapis.com",
+        ],
+        fontSrc: [
+          "'self'",
+          "https://fonts.gstatic.com",
+          "data:",
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https:",
+        ],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+      },
+    },
+    crossOriginOpenerPolicy: {
+      policy: "same-origin-allow-popups",
+    },
+  })
+);
+
 
 app.use(
   cors({
@@ -73,15 +130,6 @@ const authLimiter = rateLimit({
   },
 });
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Welcome to BlogSphere API',
-    version: '1.0.0',
-  });
-});
-
 // API health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
@@ -106,11 +154,34 @@ app.use('/api/users', userRoutes);
 // Blog management routes
 app.use('/api/blogs', blogRoutes);
 
-// Handle unknown routes
-app.use((req, res) => {
+// Handle unknown API routes
+app.use('/api', (req, res) => {
   res.status(404).json({
     success: false,
     message: 'API endpoint not found',
+  });
+});
+
+// Serve React production build
+app.use(express.static(frontendDistPath));
+
+// Support frontend routes and direct page refreshes
+app.get('/{*path}', (req, res, next) => {
+  res.sendFile(
+    path.join(frontendDistPath, 'index.html'),
+    (error) => {
+      if (error) {
+        next(error);
+      }
+    }
+  );
+});
+
+// Handle other unknown routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Page not found',
   });
 });
 
@@ -139,12 +210,13 @@ const startServer = async () => {
     const server = app.listen(PORT, () => {
       console.log('');
       console.log('================================');
-      console.log('       BLOGSPHERE API');
+      console.log('       BLOGSPHERE');
       console.log('================================');
       console.log(`Server: http://localhost:${PORT}`);
       console.log(`Health: http://localhost:${PORT}/api/health`);
       console.log(`Allowed Clients: ${CLIENT_URLS.join(', ')}`);
       console.log('Database: Connected');
+      console.log(`Frontend: ${frontendDistPath}`);
       console.log('Blog API: /api/blogs');
       console.log('Status: Running');
       console.log('================================');
