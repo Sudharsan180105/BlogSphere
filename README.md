@@ -317,7 +317,7 @@ Keep all credentials private. Vite environment variables prefixed with `VITE_` a
 
 ## 👨‍💻 Developer
 
-**Sudharsan L**
+**Sudharsan L S**
 
 Computer Science and Engineering  
 Full-Stack Developer
